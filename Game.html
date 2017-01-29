@@ -1,0 +1,238 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title> Game </title>
+    <meta charset="UTF-8" />
+    <script type="text/javascript" src="lib/phaser.min.js"></script>
+</head>
+
+<body>
+    <script type="text/javascript">
+
+        var game = new Phaser.Game(1000, 800, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+        var player;
+        var cursors;
+        var cakeTile, cakeText, gSweet1, gSweet2, nuts, firework, fire, topping, enemy1, enemy2;
+        var fireSound, nutSound, sweetSound, cakeSound, eggSound, hitEnemySound;
+
+        function preload() {
+            /*sky*/
+            game.load.image('sky', 'assets/ba.png');
+
+            /*Background*/
+            game.load.image('background', 'assets/background1.png');
+
+            /*Cake Tiles*/
+            game.load.image('cakeTile', 'assets/tile.png');
+
+            /*Cake Topping*/
+            game.load.image('topping', 'assets/topping.png');
+
+            /*Cake Text*/
+            game.load.image('cakeText', 'assets/text.png');
+
+            /*Enemy*/
+            game.load.spritesheet('enemy', 'assets/oil.png', 45, 60);
+
+            /*Egg*/
+            game.load.image('egg', 'assets/egg1x.png');
+
+            /*Good Sweets*/
+            game.load.image('gSweet1', 'assets/sweet1x.png');
+            game.load.image('gSweet2', 'assets/sweet2x.png');
+
+            /*Nuts*/
+            game.load.image('nuts', 'assets/nuts1x.png');
+
+            /*Player*/
+            game.load.spritesheet('dude', 'assets/cuppy3.png', 60, 60);
+
+            /*Firework*/
+            game.load.spritesheet('fireworks', 'assets/yellowshot.png', 32, 48);
+
+            /*Bad Sweets*/
+            game.load.spritesheet('fireSprite', 'assets/fire.png', 45, 20);
+
+            /*Sound Effects*/
+            game.load.audio('cakeSound', 'assets/EatCake.wav');
+            game.load.audio('nutSound', 'assets/hitNut.mp3');
+            game.load.audio('eggSound', 'assets/eatEgg.wav');
+            game.load.audio('sweetSound', 'assets/hitNut.mp3');
+            game.load.audio('fireSound', 'assets/Fire.mp3');
+            game.load.audio('gameSound', 'assets/f.mp3');
+
+
+        }
+
+        function create() {
+            game.physics.startSystem(Phaser.Physics.ARCADE);
+            cursors = game.input.keyboard.createCursorKeys();
+            game.add.sprite(-350, -5, 'sky');
+
+            game.add.sprite(0, 100, 'background');
+
+            //Cake tiles settings
+            cakeTile = game.add.group();
+            cakeTile.enableBody = true;
+
+            cakeText = game.add.group();
+            cakeText.enableBody = true;
+            for (var i = 0; i < 720; i += 32) {
+                for (var j = 0; j < 1000; j += 32) {
+                    cakeTile.create(game.world.width - j, game.world.height - i, 'cakeTile');
+                    cakeText.create(game.world.width - j, game.world.height - i, 'cakeText');
+                }
+            }
+
+            topping = game.add.sprite(0, 0, 'topping');
+            game.physics.arcade.enable(topping);
+            topping.body.collideWorldBounds = true;
+            topping.body.checkCollision.down = true;
+            topping.enableBody = true;
+            topping.body.immovable = true;
+
+            //Sweets settings
+            gSweet = game.add.group();
+            gSweet.enableBody = true;
+            for (var i = 0; i < 10; i++) {
+                var sweets = ['gSweet1', 'gSweet2'];
+                gSweet.create(Math.random() * 1000, Math.floor(Math.random() * 550) + 250, sweets[Math.floor(Math.random() * 2)]);
+                game.physics.enable(gSweet.children[i], Phaser.Physics.ARCADE);
+            }
+
+            //Nuts settings
+            nuts = game.add.group();
+            nuts.enableBody = true;
+            for (var i = 0; i < 3; i++) {
+                nuts.create(Math.random() * 650, Math.floor(Math.random() * 350) + 450, 'nuts');
+                game.physics.arcade.enable(nuts);
+                nuts.children[i].body.immovable = true;
+            }
+
+            //Player settings
+            player = game.add.sprite(35, game.world.height - 250, 'dude');
+            game.physics.arcade.enable(player);
+            player.body.collideWorldBounds = true;
+            player.animations.add('right', [1, 0, 2], 10, true);
+            player.animations.add('left', [1, 0, 2], 10, true);
+
+            //Fire settings
+            fire = game.add.sprite(35, game.world.height - 150, 'fireSprite');
+            fire.animations.add('keepFire', [], 10, true);
+
+            //Egg settings
+            egg = game.add.sprite(game.world.width - 150, 290, 'egg');
+            game.physics.arcade.enable(egg);
+
+            //Sound effects settings
+            cakeSound = game.add.audio('cakeSound', 0.2);
+            nutSound = game.add.audio('nutSound');
+            eggSound = game.add.audio('eggSound');
+            sweetSound = game.add.audio('sweetSound');
+            gameSound = game.add.audio('gameSound');
+
+            //Enemy settings
+            //enemy1 = game.add.sprite(20, game.world.height - 250, 'enemy');
+            //game.physics.arcade.enable(enemy1);
+            //enemy1.body.collideWorldBounds = true;
+            //enemy1.animations.add('move', [1, 0, 2], 10, true);
+
+            enemy2 = game.add.sprite(game.world.width - 150, 50, 'enemy');
+            game.physics.arcade.enable(enemy2);
+            enemy2.body.collideWorldBounds = true;
+            enemy2.animations.add('move', [1, 0, 2], 10, true);
+
+            fireSound = game.add.audio('fireSound');
+            //fireSound.play();
+            //fireSound.loop = true;
+
+        }
+
+
+        function update() {
+            //Player Movement
+            player.body.velocity.x = 0;
+            player.body.velocity.y = 0;
+
+            if (cursors.left.isDown) {
+                player.body.velocity.x = -150;
+                player.animations.play('left');
+            }
+            else if (cursors.right.isDown) {
+                player.body.velocity.x = 150;
+                player.animations.play('right');
+            }
+            else if (cursors.up.isDown) {
+                player.body.velocity.y = -150;
+                player.frame = 4;
+            }
+            else if (cursors.down.isDown) {
+                player.body.velocity.y = 150;
+                player.frame = 4;
+            }
+            else {
+                player.animations.stop();
+                player.frame = 4;
+            }
+
+            //if (enemy1.y < 500) {
+            //    enemy1.body.gravity.y = 100;
+            //} else {
+            //    enemy1.body.velocity.y = -100;
+            //}
+            //enemy1.animations.play('move');
+
+            if (enemy2.y < 500) {
+                enemy2.body.gravity.y = 100;
+            } else {
+                enemy2.body.velocity.y = -100;
+            }
+            enemy2.animations.play('move');
+
+            game.physics.arcade.overlap(player, cakeTile, eatSponge, null, this);
+            game.physics.arcade.overlap(player, cakeText, eatSponge, null, this);
+            game.physics.arcade.overlap(player, gSweet, eatGSweet, null, this);
+            game.physics.arcade.collide(player, nuts, eatNuts, null, this);
+            game.physics.arcade.collide(player, egg, win, null, this);
+            game.physics.arcade.collide(player, topping, win, null, this);
+            //game.physics.arcade.collide(player, enemy1, lose, null, this);
+            game.physics.arcade.collide(player, enemy2, lose, null, this);
+            fire.animations.play('keepFire');
+            //gameSound.play();
+        }
+
+        function lose(player, enemy) {
+            player.kill();
+        }
+        function eatSponge(player, cakeTile) {
+            cakeTile.kill();
+            cakeSound.play();
+
+        }
+
+        function eatGSweet(player, gSweet) {
+            gSweet.kill();
+            sweetSound.play();
+
+            //Fireworks settings
+            firework = game.add.sprite(gSweet.x, gSweet.y, 'fireworks');
+            firework.animations.add('startFire', [], 10, true);
+            firework.animations.play('startFire');
+            setTimeout(function () {
+                firework.kill();
+                sweetSound.stop();
+            }, 500);
+
+        }
+
+        function eatNuts(player, nuts) {
+            //nutSound.play();
+        }
+
+        function win(player, egg) {
+            egg.kill();
+            eggSound.play();
+        }
+    </script>
+</body>
+</html>
